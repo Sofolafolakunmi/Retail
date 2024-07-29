@@ -1,0 +1,317 @@
+---
+title: "Retail"
+author: "Sofola Folakunmi Abidemi"
+date: "2024-06-27"
+output: html_document
+---
+
+## INTRODUCTION TO THE PROJECT
+This project aim to analyze retail transctional data to gain insight into customer behavior, product perform and sales trends.The gold is to 
+help walmart(assuming the company name)make informed decision to grow and make more sales. 
+
+##ASK PHASE
+This ask pahse involves the business promblem the project will slove, and there incule;
+1. What are the cusmtomer segment and their behaviour? 
+2. which product and the most popular among different customer segment?
+3. what are the sales trends over time?
+4. how do shipping and payment method affect customer over time?
+
+## PREPARE PHASE
+Install and load the packages
+```{r}
+library(tidyverse)
+library(readr)
+library(janitor)
+library(lubridate)
+```
+
+Reading .csv into R
+```{r}
+retail <- read_csv ("C:/Users/USER/Desktop/BACKUP/Desktop/DATA ANALYSIS CLASS/CIRCVEE/new_retail_data.csv")
+```
+
+```{r}
+head(retail)
+```
+```{r}
+spec(retail)
+```
+
+```{r}
+dim(retail)
+```
+
+```{r}
+summary(retail)
+```
+
+## PROCESS PHASE 
+```{r}
+retail_clean <- na.omit (retail)
+```
+
+```{r}
+summary(retail_clean)
+```
+### to remove null values
+```{r}
+retailc <- retail %>% drop_na()
+```
+
+```{r}
+summary(retailc)
+```
+### This is to replace null values with the number of mean in a coloumn, in this example the coloum is the AMOUNT. 
+```{r}
+retail$Amount[is.na(retail$Amount)]<- mean (retail$Amount,na.rm=TRUE)
+```
+
+```{r}
+summary(retail)
+```
+```{r}
+retail$Ratings[is.na(retail$Ratings)]<- mean (retail$Ratings, na.rm=TRUE)
+```
+
+```{r}
+summary(retail)
+```
+### This is to check the mode, mode_impute is naming the fuction, 
+```{r}
+mode_impute <- function(x) {
+  ux <- unique(x)
+ux[which.max(tabulate(match(x, ux)))]
+}
+
+retail$Zipcode[is.na(retail$Zipcode)] <- mode_impute(retail$Zipcode)
+```
+
+```{r}
+summary(retail)
+```
+
+```{r}
+mode_impute <- function(x) {
+  ux <- unique(x)
+ux[which.max(tabulate(match(x, ux)))]
+}
+
+retail$Year[is.na(retail$Year)] <- mode_impute(retail$Year)
+```
+
+```{r}
+summary(retail)
+```
+
+```{r}
+head(retail)
+```
+
+```{r}
+retailc$Amount[is.na(retailc$Amount)]<- mean (retailc$Amount,na.rm=TRUE)
+```
+
+```{r}
+summary(retailc)
+```
+
+```{r}
+mode_impute <- function(x) {
+  ux <- unique(x)
+ux[which.max(tabulate(match(x, ux)))]
+}
+
+retailc$year[is.na(retailc$year)] <- mode_impute(retailc$year)
+```
+
+```{r}
+retailc$ratings[is.na(retailc$ratings)]<- mean (retailc$ratings, na.rm=TRUE)
+```
+
+```{r}
+dim(retailc)
+```
+### distinct: This is to delete duplicate
+```{r}
+retailc <- distinct(retailc)
+```
+
+```{r}
+retailc <- retailc %>% distinct()
+```
+
+### Dim is count row and coloumn 
+```{r}
+dim(retailc)
+```
+```{r}
+sum(is.na(retailc))
+```
+### this is to change the headlines to small letters 
+```{r}
+retailc <- clean_names(retailc)
+```
+
+### this is check for duplicate
+```{r}
+sum(duplicated(retailc))
+```
+
+```{r}
+summary(retailc)
+```
+### This is to check the first 10 rows
+```{r}
+retailc
+```
+
+
+### Analysis pharse/ Exporatory Data Analysis (EDA)
+```{r}
+retailc %>%
+  group_by(customer_segment) %>%
+  summarize(total_purchase = sum (total_purchases),
+            total_amount = sum(total_amount))
+```
+
+### THIS is to check for null values in a column
+```{r}
+sum(is.na(retailc$customer_segment))
+```
+### this is to check the grouping or category for the coloumn 
+```{r}
+unique(retailc$customer_segment)
+```
+
+###  this is use to remove or ignore null values in our coloumn (sustomer segement), na.rm = TRUE means if null is true
+```{r}
+filterer <- retailc%>%
+  filter(!is.na(customer_segment))
+
+filterer %>%
+  group_by(customer_segment) %>%
+  summarize(total_purchase = sum (total_purchases, na.rm = TRUE),
+            total_amount = sum(total_amount, na.rm = TRUE))
+```
+```{r}
+retailc %>%
+  group_by(product_category) %>%
+  summarize(total_purchase = sum (total_purchases),
+            total_amount = sum(total_amount))
+```
+
+### 2. which product and the most popular among different customer segment?
+```{r}
+retailc %>%
+  group_by(customer_segment) %>%
+ count(product_category)
+```
+
+```{r}
+retailc %>%
+  group_by(product_category) %>%
+  summarize(total_purchase = sum (total_purchases),
+            total_amount = sum(total_amount)) %>%
+  
+  ### (this is arrange the column, to know what is the highest and lowest)
+arrange (desc (total_purchase))
+```
+
+```{r}
+#Replace empty strings with NA ( This is use when you are having Null values in any coloumn )
+retailc$product_category[retailc$product_category == ""] <- NA 
+```
+
+```{r}
+retailc %>%
+  group_by(month) %>%
+  summarize(total_purchase = sum (total_purchases))
+```
+
+```{r}
+# Ensure 'month' is a factor with levels ordered from january to December 
+# mutate is to arrange stuffs or add a new 
+
+retailc <- retailc%>%
+  mutate( month = factor(month, levels = c("January", "February", "March",
+                                           "April", "May", "June", "July",
+                                           "August", "September", "October",
+                                           "November", "December")))
+
+#Group by ordered factor and summarize the data 
+monthly_Summary <- retailc %>%
+  group_by(month) %>%
+  summarize(total_purchase = sum (total_purchases, na.rm = TRUE))
+
+#Display the result
+print(monthly_Summary)
+```
+
+```{r}
+# Ensure 'month' is a factor with levels ordered from january to December 
+# mutate is to arrange stuffs or add a new 
+
+retailc <- retailc%>%
+  mutate( month = factor(month, levels = c("January", "February", "March",
+                                           "April", "May", "June", "July",
+                                           "August", "September", "October",
+                                           "November", "December" )))
+
+#Group by ordered factor and summarize the data 
+monthly_Summary <- retailc %>%
+  group_by(month) %>%
+  summarize(total_purchase = sum (total_purchases, na.rm = TRUE))
+
+#Display the result
+print(monthly_Summary)
+```
+
+```{r}
+packageVersion("ggplot2")
+```
+
+```{r}
+summary(retailc)
+```
+
+
+### Visualization 
+# Customer Segment Distribution PLOT 
+# ggplot is used for visualization 
+### geom_bar means bar chart while geom_line means line chart 
+### theme means the colour of the backgroung 
+### labs is the chart title with X & Y titles as well 
+### aes specifies the coloumnin the df we're working with 
+```{r}
+ggplot(retailc, aes(x = Customer_Segment)) + 
+  geom_bar() + 
+  labs(title = "Customer Segments Distribution", X = "Segment", y = " Count")
+```
+```{r}
+summary(retailc)
+```
+### Plot for Total Purchases by Customer Segment 
+
+```{r}
+ggplot(retailc, aes(x = customer_segment, y = total_purchases, fill = customer_segment)) +
+  geom_bar(stat = "identity") +
+  labs(title ="Total Purchases by Customer Segment", x = "customer_segment", y = "Total Purchases") +
+  theme_minimal()
+```
+# Plot for Total Sales by Product Category
+```{r}
+ggplot(retailc, aes(x = product_category, y = total_purchases, fill = product_category)) +
+geom_bar(stat = "identity", position = "dodge") +
+  labs(title = "Total Sales by Product Category", x = "Product Brand", y = "Total Sales") + 
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+#Sales Trends Over Time 
+```{r}
+ggplot(retailc, aes(x = year, y = total_amount)) + 
+  geom_line() + 
+  labs(title = "Sales Trends Over Time", X = "Date", y = " Total Sales")
+```
+
+  
